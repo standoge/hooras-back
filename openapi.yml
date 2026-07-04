@@ -81,6 +81,7 @@ paths:
       tags: [Modules]
       summary: List installed modules
       operationId: listModules
+      description: Requires admin role.
       responses:
         "200":
           description: Installed modules
@@ -111,6 +112,7 @@ paths:
       tags: [Modules]
       summary: Get module manifest
       operationId: getModuleManifest
+      description: Available to any authenticated user.
       parameters:
         - $ref: "#/components/parameters/ModuleKey"
       responses:
@@ -205,6 +207,7 @@ paths:
       tags: [Modules]
       summary: Get module health
       operationId: getModuleHealth
+      description: Available to any authenticated user.
       parameters:
         - $ref: "#/components/parameters/ModuleKey"
       responses:
@@ -220,6 +223,7 @@ paths:
       tags: [Provider Connections]
       summary: List provider connections
       operationId: listProviderConnections
+      description: Requires admin role.
       responses:
         "200":
           description: Provider connections
@@ -301,6 +305,7 @@ paths:
       tags: [Provider Connections]
       summary: Get provider schema metadata
       operationId: getProviderSchema
+      description: Available to any authenticated user. Returns student-data schema when the connection type is student_data.
       parameters:
         - $ref: "#/components/parameters/ProviderId"
       responses:
@@ -318,9 +323,8 @@ paths:
       operationId: loginThroughAuthModule
       security: []
       description: >
-        For the MVP, this delegates to the dummy-auth-connector module.
-        Production auth modules may redirect to OIDC, SAML, LDAP, or another
-        college-owned auth system.
+        Delegates to the currently enabled auth connector module. providerProfile
+        is forwarded to the connector when supported.
       requestBody:
         required: true
         content:
@@ -364,10 +368,10 @@ paths:
       tags: [Student Data]
       summary: Search students through the enabled student-data connector module
       operationId: searchStudentsThroughModule
+      description: Requires coordinator, admin, or faculty_supervisor role. Returns an empty array when query is omitted.
       parameters:
         - in: query
           name: query
-          required: true
           schema:
             type: string
       responses:
@@ -426,6 +430,7 @@ paths:
       tags: [Student Profile]
       summary: Get current student's generated profile
       operationId: getMyStudentProfile
+      description: Requires the authenticated user to have a studentRef. Returns 403 otherwise.
       responses:
         "200":
           description: Student profile
@@ -433,12 +438,15 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/StudentProfile"
+        "403":
+          description: Current user is not a student
 
   /api/v1/me/profile/refresh:
     post:
       tags: [Student Profile]
       summary: Refresh current student's profile from external student-data provider
       operationId: refreshMyStudentProfile
+      description: Requires the authenticated user to have a studentRef. Returns 403 otherwise.
       responses:
         "200":
           description: Refreshed student profile
@@ -446,12 +454,15 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/StudentProfile"
+        "403":
+          description: Current user is not a student
 
   /api/v1/rules:
     get:
       tags: [Rules]
       summary: List requirement rules
       operationId: listRules
+      description: Returns only active rules, optionally filtered by scope query parameters.
       parameters:
         - in: query
           name: facultyCode
@@ -478,6 +489,7 @@ paths:
       tags: [Rules]
       summary: Create a requirement rule
       operationId: createRule
+      description: Requires admin or coordinator role.
       requestBody:
         required: true
         content:
@@ -516,6 +528,7 @@ paths:
       tags: [Projects]
       summary: List projects
       operationId: listProjects
+      description: Students only see projects with status published, accepting_applications, or in_execution unless they also hold admin or coordinator role.
       parameters:
         - in: query
           name: status
@@ -574,6 +587,7 @@ paths:
       tags: [Projects]
       summary: Update a project
       operationId: updateProject
+      description: Requires coordinator or admin role. All fields are optional; only provided fields are updated.
       parameters:
         - $ref: "#/components/parameters/ProjectId"
       requestBody:
@@ -581,7 +595,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/ProjectInput"
+              $ref: "#/components/schemas/ProjectPatch"
       responses:
         "200":
           description: Project updated
@@ -595,6 +609,7 @@ paths:
       tags: [Projects]
       summary: Publish a project
       operationId: publishProject
+      description: Sets project status to accepting_applications. Fails with 400 if the project is archived.
       parameters:
         - $ref: "#/components/parameters/ProjectId"
       responses:
@@ -681,15 +696,6 @@ paths:
       operationId: rejectFirecrawlResult
       parameters:
         - $ref: "#/components/parameters/ImportResultId"
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                reason:
-                  type: string
       responses:
         "200":
           description: Import result rejected
@@ -703,10 +709,11 @@ paths:
       tags: [Applications]
       summary: Apply to a project
       operationId: createApplication
+      description: Requires student role. Project must have status published or accepting_applications. studentRef defaults to the authenticated user's studentRef when omitted.
       parameters:
         - $ref: "#/components/parameters/ProjectId"
       requestBody:
-        required: true
+        required: false
         content:
           application/json:
             schema:
@@ -724,6 +731,7 @@ paths:
       tags: [Applications]
       summary: List applications
       operationId: listApplications
+      description: Students only see their own applications unless they also hold admin or coordinator role.
       parameters:
         - in: query
           name: status
@@ -787,6 +795,7 @@ paths:
       tags: [Assignments]
       summary: List assignments
       operationId: listAssignments
+      description: Students only see their own assignments unless they also hold admin, coordinator, or faculty_supervisor role.
       parameters:
         - in: query
           name: studentRef
@@ -812,6 +821,7 @@ paths:
       tags: [Assignments]
       summary: Assign or replace supervisor
       operationId: setAssignmentSupervisor
+      description: Any authenticated user may update the supervisor reference.
       parameters:
         - $ref: "#/components/parameters/AssignmentId"
       requestBody:
@@ -860,6 +870,7 @@ paths:
       tags: [Hour Logs]
       summary: Submit an hour log
       operationId: createHourLog
+      description: Requires student role. The assignment must belong to the authenticated student.
       requestBody:
         required: true
         content:
@@ -1033,6 +1044,7 @@ paths:
       tags: [Certificates]
       summary: Generate a social-hours completion certificate
       operationId: generateCertificate
+      description: Requires coordinator or admin role. Returns 400 when the student is ineligible or has insufficient approved hours.
       requestBody:
         required: true
         content:
@@ -1053,22 +1065,15 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Certificate"
+        "400":
+          description: Student ineligible or insufficient approved hours
 
   /api/v1/reports/progress:
     get:
       tags: [Reports]
       summary: Get progress report
       operationId: getProgressReport
-      parameters:
-        - in: query
-          name: programCode
-          schema:
-            type: string
-        - in: query
-          name: projectId
-          schema:
-            type: string
-            format: uuid
+      description: Requires coordinator, admin, or auditor role. Returns platform-wide aggregate metrics.
       responses:
         "200":
           description: Progress report
@@ -1082,6 +1087,7 @@ paths:
       tags: [Reports]
       summary: Get project report
       operationId: getProjectReport
+      description: Requires coordinator, admin, or auditor role.
       responses:
         "200":
           description: Project report
@@ -1095,6 +1101,7 @@ paths:
       tags: [Audit]
       summary: List audit events
       operationId: listAuditEvents
+      description: Requires admin or auditor role. Returns at most 100 events, newest first.
       parameters:
         - in: query
           name: actorRef
@@ -1130,6 +1137,10 @@ paths:
       responses:
         "202":
           description: Event accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebhookAcceptedResponse"
 
   /api/v1/webhooks/notifications/status:
     post:
@@ -1147,6 +1158,10 @@ paths:
       responses:
         "202":
           description: Event accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebhookAcceptedResponse"
 
   /api/v1/webhooks/workflows/project-posted:
     post:
@@ -1164,6 +1179,10 @@ paths:
       responses:
         "202":
           description: Event accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebhookAcceptedResponse"
 
   /api/v1/webhooks/scraper/crawl-completed:
     post:
@@ -1181,6 +1200,10 @@ paths:
       responses:
         "202":
           description: Event accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebhookAcceptedResponse"
 
   /demo-auth/.well-known/openid-configuration:
     get:
@@ -1232,9 +1255,6 @@ paths:
                 password:
                   type: string
                   format: password
-                providerProfile:
-                  type: string
-                  description: Demo profile used to simulate a college auth provider.
       responses:
         "200":
           description: Access token
@@ -1293,10 +1313,6 @@ paths:
           name: role
           schema:
             $ref: "#/components/schemas/UserRole"
-        - in: query
-          name: providerProfile
-          schema:
-            type: string
       responses:
         "200":
           description: Dummy users
@@ -1417,11 +1433,6 @@ paths:
       summary: List dummy academic programs
       operationId: listDemoPrograms
       security: []
-      parameters:
-        - in: query
-          name: providerProfile
-          schema:
-            type: string
       responses:
         "200":
           description: Programs
@@ -1855,13 +1866,9 @@ components:
         password:
           type: string
           format: password
-        moduleKey:
-          type: string
-          default: dummy-auth-connector
-          description: Optional module override for demos. Production should normally use the active auth connector.
         providerProfile:
           type: string
-          description: Dummy-provider profile used to simulate a college auth provider.
+          description: Forwarded to the active auth connector when supported.
 
     AuthTokenResponse:
       type: object
@@ -2044,12 +2051,13 @@ components:
 
     RequirementRuleInput:
       type: object
-      required: [name, scope, requiredHours]
+      required: [name, requiredHours]
       properties:
         name:
           type: string
         scope:
           type: object
+          description: Defaults to an empty object when omitted.
           properties:
             facultyCode:
               type: string
@@ -2186,6 +2194,39 @@ components:
         publicSafe:
           type: boolean
           default: false
+
+    ProjectPatch:
+      type: object
+      description: Partial project update. All fields are optional.
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        organizationName:
+          type: string
+        location:
+          type: string
+        modality:
+          type: string
+          enum: [onsite, remote, hybrid]
+        categories:
+          type: array
+          items:
+            type: string
+        capacity:
+          type: integer
+        startsAt:
+          type: string
+          format: date
+        endsAt:
+          type: string
+          format: date
+        applicationDeadline:
+          type: string
+          format: date
+        publicSafe:
+          type: boolean
 
     ProjectStatus:
       type: string
@@ -2503,7 +2544,7 @@ components:
 
     StudentDataUpdatedEvent:
       type: object
-      required: [providerKey, externalStudentId, occurredAt]
+      description: Payload is not validated. Only externalStudentId is used to invalidate cached profiles.
       properties:
         providerKey:
           type: string
@@ -2517,9 +2558,17 @@ components:
           type: string
           format: date-time
 
+    WebhookAcceptedResponse:
+      type: object
+      required: [accepted]
+      properties:
+        accepted:
+          type: boolean
+          const: true
+
     NotificationStatusEvent:
       type: object
-      required: [providerKey, messageId, status]
+      description: Payload is not validated. Only messageId and status are used to update notification records.
       properties:
         providerKey:
           type: string
@@ -2534,7 +2583,7 @@ components:
 
     ProjectPostedEvent:
       type: object
-      required: [providerKey, projectId, status]
+      description: Payload is not validated. The handler acknowledges the event without processing fields.
       properties:
         providerKey:
           type: string
@@ -2550,7 +2599,7 @@ components:
 
     CrawlCompletedEvent:
       type: object
-      required: [providerKey, runId, status]
+      description: Payload is not validated. The handler acknowledges the event without processing fields.
       properties:
         providerKey:
           type: string
