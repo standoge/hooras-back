@@ -14,7 +14,10 @@ import { mapRequirement } from '../services/documents.service';
 const requirementSchema = z.object({
   key: z.string(),
   label: z.string(),
+  description: z.string().optional(),
   required: z.boolean(),
+  scope: z.enum(['global', 'project', 'program']).optional(),
+  projectId: z.string().uuid().optional(),
   appliesTo: z.object({
     projectType: z.string().optional(),
     facultyCode: z.string().optional(),
@@ -25,6 +28,8 @@ const requirementSchema = z.object({
   requiresApproval: z.boolean().optional(),
   templateId: z.string().optional(),
 });
+
+const requirementUpdateSchema = requirementSchema.partial();
 
 const uploadSchema = z.object({
   documentRequirementId: z.string().uuid(),
@@ -52,7 +57,7 @@ function mapDocument(row: Record<string, unknown>) {
   };
 }
 
-router.get('/document-requirements', authMiddleware, asyncHandler(async (_req: Request, res: Response) => {
+router.get('/document-requirements', authMiddleware, rbac('admin', 'coordinator'), asyncHandler(async (_req: Request, res: Response) => {
   const rows = await db('document_requirements').select('*');
   res.json(rows.map(mapRequirement));
 }));
@@ -64,26 +69,63 @@ router.post('/document-requirements', authMiddleware, rbac('admin', 'coordinator
       id: uuidv4(),
       key: body.key,
       label: body.label,
+      description: body.description ?? null,
       required: body.required,
+      scope: body.scope ?? 'global',
+      project_id: body.projectId ?? null,
       applies_to: JSON.stringify(body.appliesTo ?? {}),
       allowed_file_types: JSON.stringify(body.allowedFileTypes),
       max_file_size_mb: body.maxFileSizeMb,
       requires_approval: body.requiresApproval ?? true,
       template_id: body.templateId,
+      created_by: req.user!.externalUserId,
     })
     .returning('*');
   res.status(201).json(mapRequirement(row));
 }));
 
-router.get('/documents', authMiddleware, asyncHandler(async (req: Request, res: Response) => {
+router.patch('/document-requirements/:id', authMiddleware, rbac('admin', 'coordinator'), validate(requirementUpdateSchema), asyncHandler(async (req: Request, res: Response) => {
+  const body = req.body;
+  const updates: Record<string, unknown> = {};
+  if (body.key !== undefined) updates.key = body.key;
+  if (body.label !== undefined) updates.label = body.label;
+  if (body.description !== undefined) updates.description = body.description;
+  if (body.required !== undefined) updates.required = body.required;
+  if (body.scope !== undefined) updates.scope = body.scope;
+  if (body.projectId !== undefined) updates.project_id = body.projectId;
+  if (body.appliesTo !== undefined) updates.applies_to = JSON.stringify(body.appliesTo);
+  if (body.allowedFileTypes !== undefined) updates.allowed_file_types = JSON.stringify(body.allowedFileTypes);
+  if (body.maxFileSizeMb !== undefined) updates.max_file_size_mb = body.maxFileSizeMb;
+  if (body.requiresApproval !== undefined) updates.requires_approval = body.requiresApproval;
+  if (body.templateId !== undefined) updates.template_id = body.templateId;
+
+  const [row] = await db('document_requirements')
+    .where({ id: req.params.id })
+    .update(updates)
+    .returning('*');
+  if (!row) throw new NotFoundError('Document requirement not found');
+  res.json(mapRequirement(row));
+}));
+
+router.delete('/document-requirements/:id', authMiddleware, rbac('admin', 'coordinator'), asyncHandler(async (req: Request, res: Response) => {
+  const [row] = await db('document_requirements')
+    .where({ id: req.params.id })
+    .update({ active: false })
+    .returning('*');
+  if (!row) throw new NotFoundError('Document requirement not found');
+  res.json(mapRequirement(row));
+}));
+
+router.get('/documents', authMiddleware, rbac('coordinator', 'faculty_supervisor', 'admin'), asyncHandler(async (req: Request, res: Response) => {
   let query = db('document_uploads').select('*');
   if (req.query.studentRef) query = query.where({ owner_ref: req.query.studentRef });
   if (req.query.assignmentId) query = query.where({ assignment_id: req.query.assignmentId });
+  if (req.query.status) query = query.where({ status: req.query.status });
   const rows = await query.orderBy('uploaded_at', 'desc');
   res.json(rows.map(mapDocument));
 }));
 
-router.post('/documents', authMiddleware, validate(uploadSchema), asyncHandler(async (req: Request, res: Response) => {
+router.post('/documents', authMiddleware, rbac('coordinator', 'admin'), validate(uploadSchema), asyncHandler(async (req: Request, res: Response) => {
   const [row] = await db('document_uploads')
     .insert({
       id: uuidv4(),
@@ -112,7 +154,10 @@ router.post('/documents/:documentId/approve', authMiddleware, rbac('coordinator'
     entityId: row.id as string,
   });
   const notifications = getService<NotificationsServiceV1>(NOTIFICATIONS_V1);
-  await notifications.send('document_approved', row.owner_ref as string, { documentId: row.id });
+  await notifications.send('document_approved', row.owner_ref as string, {
+    studentRef: row.owner_ref,
+    documentId: row.id,
+  });
   res.json(mapDocument(row));
 }));
 
@@ -124,6 +169,7 @@ router.post('/documents/:documentId/reject', authMiddleware, rbac('coordinator',
   if (!row) throw new NotFoundError('Document not found');
   const notifications = getService<NotificationsServiceV1>(NOTIFICATIONS_V1);
   await notifications.send('document_rejected', row.owner_ref as string, {
+    studentRef: row.owner_ref,
     documentId: row.id,
     reason: req.body.reason,
   });

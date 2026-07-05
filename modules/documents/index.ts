@@ -6,6 +6,7 @@ import { DOCUMENTS_V1 } from '../../platform/contracts/services';
 import { manifest } from './manifest';
 import { documentsService } from './services/documents.service';
 import documentsRoutes from './routes/documents.routes';
+import meDocumentsRoutes from './routes/meDocuments.routes';
 import { documentRequirementsSeed } from './seeds/document_requirements.seed';
 
 const instance = createBaseDomainModule(manifest);
@@ -21,7 +22,10 @@ const descriptor: PlatformModuleDescriptor = {
     registry.provide(DOCUMENTS_V1, manifest.moduleKey, documentsService);
   },
   getRoutes() {
-    return [{ path: '/api/v1', router: documentsRoutes }];
+    return [
+      { path: '/api/v1', router: documentsRoutes },
+      { path: '/api/v1/me', router: meDocumentsRoutes },
+    ];
   },
   async onInstall() {
     const count = await db('document_requirements').count('id as count').first();
