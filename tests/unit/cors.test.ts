@@ -22,6 +22,17 @@ describe('parseCorsOrigins', () => {
     });
   });
 
+  it('strips trailing slashes from origins', () => {
+    expect(parseCorsOrigins('https://a.com/')).toEqual({
+      allowAll: false,
+      origins: ['https://a.com'],
+    });
+    expect(parseCorsOrigins('https://a.com/,https://b.com/')).toEqual({
+      allowAll: false,
+      origins: ['https://a.com', 'https://b.com'],
+    });
+  });
+
   it('throws for empty value', () => {
     expect(() => parseCorsOrigins('')).toThrow('CORS_ORIGINS must be * or at least one URL');
     expect(() => parseCorsOrigins(' , ')).toThrow('CORS_ORIGINS must be * or at least one URL');
@@ -33,8 +44,11 @@ describe('parseCorsOrigins', () => {
 });
 
 describe('resolveCorsOptions', () => {
-  it('returns empty options when all origins are allowed', () => {
-    expect(resolveCorsOptions({ allowAll: true })).toEqual({});
+  it('reflects any origin when all origins are allowed', () => {
+    expect(resolveCorsOptions({ allowAll: true })).toEqual({
+      origin: true,
+      credentials: true,
+    });
   });
 
   it('returns origin list when restricted', () => {
@@ -43,7 +57,10 @@ describe('resolveCorsOptions', () => {
         allowAll: false,
         origins: ['http://localhost:5173'],
       })
-    ).toEqual({ origin: ['http://localhost:5173'] });
+    ).toEqual({
+      origin: ['http://localhost:5173'],
+      credentials: true,
+    });
   });
 });
 
@@ -57,6 +74,20 @@ describe('CORS middleware integration', () => {
       process.env.CORS_ORIGINS = originalCorsOrigins;
     }
     vi.resetModules();
+  });
+
+  it('allows any origin on preflight when CORS_ORIGINS is *', async () => {
+    process.env.CORS_ORIGINS = '*';
+    vi.resetModules();
+    const { createApp } = await import('../../app');
+    const app = createApp();
+
+    const res = await request(app)
+      .options('/health')
+      .set('Origin', 'https://cualquier-frontend.com')
+      .set('Access-Control-Request-Method', 'GET');
+
+    expect(res.headers['access-control-allow-origin']).toBe('https://cualquier-frontend.com');
   });
 
   it('allows whitelisted origin on preflight', async () => {

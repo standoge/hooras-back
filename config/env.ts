@@ -28,7 +28,10 @@ const envSchema = z.object({
   N8N_API_KEY: optionalNonEmptyString,
   N8N_TIMEOUT_MS: z.coerce.number().int().positive().default(15000),
   N8N_MAX_RETRIES: z.coerce.number().int().min(0).max(5).default(2),
-  CORS_ORIGINS: z.string().default('*').transform(parseCorsOrigins),
+  CORS_ORIGINS: z.preprocess(
+    (value) => (value === '' || value === undefined ? '*' : value),
+    z.string().transform(parseCorsOrigins),
+  ),
   STORAGE_BACKEND: z.enum(['local', 'netlify-blobs']).optional(),
 });
 

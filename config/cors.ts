@@ -16,7 +16,7 @@ export function parseCorsOrigins(raw: string): CorsOriginConfig {
 
   const origins = trimmed
     .split(',')
-    .map((entry) => entry.trim())
+    .map((entry) => entry.trim().replace(/\/$/, ''))
     .filter(Boolean);
 
   if (origins.length === 0) {
@@ -35,8 +35,14 @@ export function parseCorsOrigins(raw: string): CorsOriginConfig {
 
 export function resolveCorsOptions(config: CorsOriginConfig): CorsOptions {
   if (config.allowAll) {
-    return {};
+    return {
+      origin: true,
+      credentials: true,
+    };
   }
 
-  return { origin: config.origins };
+  return {
+    origin: config.origins,
+    credentials: true,
+  };
 }
