@@ -15,7 +15,9 @@
     "netlify:deploy": "pnpm dlx netlify-cli deploy --prod",
     "lint": "eslint . --ext .ts",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "openapi:lint": "redocly lint openapi.yml",
+    "openapi:docs": "redocly build-docs openapi.yml -o docs/api.html --title \"Social Hours Platform API\""
   },
   "packageManager": "pnpm@10.33.0",
   "engines": {
@@ -38,6 +40,7 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@redocly/cli": "^2.37.0",
     "@types/aws-lambda": "^8.10.162",
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",

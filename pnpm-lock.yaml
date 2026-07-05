@@ -48,6 +48,9 @@ importers:
         specifier: ^3.24.1
         version: 3.25.76
     devDependencies:
+      '@redocly/cli':
+        specifier: ^2.37.0
+        version: 2.37.0
       '@types/aws-lambda':
         specifier: ^8.10.162
         version: 8.10.162
@@ -273,6 +276,11 @@ packages:
 
   '@paralleldrive/cuid2@2.3.1':
     resolution: {integrity: sha512-XO7cAxhnTZl0Yggq6jOgjiOHhbgcO4NqFqwSmQpjK3b6TEE6Uj/jfSk6wzYyemh3+I0sHirKSetjQwn5cZktFw==}
+
+  '@redocly/cli@2.37.0':
+    resolution: {integrity: sha512-2xKvVy2re6xiWfrWHJj633oEoVAYHisPsxEwoxtSxMqB+RhW2uqM98+JPjrLQPpj2m1bXrj08KXwpSFfojV0/g==}
+    engines: {node: '>=22.12.0 || >=20.19.0 <21.0.0', npm: '>=10'}
+    hasBin: true
 
   '@rolldown/binding-android-arm64@1.1.4':
     resolution: {integrity: sha512-EZLpf/8y7GXkkra90ML47kzik/GMP3EMcE9bPyHmRfxLC6z9+aW5A8poCsoxjrT5GfEcNAAvWwUHjvP1pUQkfw==}
@@ -1500,6 +1508,8 @@ snapshots:
   '@paralleldrive/cuid2@2.3.1':
     dependencies:
       '@noble/hashes': 1.8.0
+
+  '@redocly/cli@2.37.0': {}
 
   '@rolldown/binding-android-arm64@1.1.4':
     optional: true
