@@ -7,6 +7,7 @@ Self-hosted backend for managing college social hours in El Salvador. Built with
 ### Prerequisites
 
 - Node.js 18+
+- [pnpm](https://pnpm.io/installation) 10+ (habilita Corepack: `corepack enable`)
 - Docker (for PostgreSQL)
 
 ### Setup
@@ -19,10 +20,10 @@ cp .env.example .env
 docker compose up -d
 
 # Install dependencies
-npm install
+pnpm install
 
 # Run migrations and start dev server (seeds run automatically on first boot)
-npm run dev
+pnpm dev
 ```
 
 The API runs at `http://localhost:3000`. Swagger UI: `http://localhost:3000/docs`
@@ -56,18 +57,19 @@ En **Site configuration → Environment variables**, configura:
 1. Sube el proyecto a GitHub/GitLab/Bitbucket.
 2. En [Netlify](https://app.netlify.com), **Add new site → Import an existing project**.
 3. Netlify detectará `netlify.toml` con:
-   - **Build command:** `npm run build && npm run db:prepare`
+   - **Build command:** `pnpm run build && pnpm run db:prepare`
+   - **Package manager:** pnpm (vía `pnpm-lock.yaml` y `packageManager` en `package.json`)
    - **Functions:** `netlify/functions`
    - **Publish directory:** `public`
 
 ### 4. Desarrollo local con Netlify
 
 ```bash
-npm install
+pnpm install
 docker compose up -d
 cp .env.example .env
-npm run build
-npm run netlify:dev
+pnpm build
+pnpm netlify:dev
 ```
 
 La API quedará disponible en `http://localhost:8888` (proxy de Netlify Dev).
@@ -75,9 +77,9 @@ La API quedará disponible en `http://localhost:8888` (proxy de Netlify Dev).
 ### 5. Deploy manual (opcional)
 
 ```bash
-npx netlify login
-npx netlify init
-npm run netlify:deploy
+pnpm exec netlify login
+pnpm exec netlify init
+pnpm netlify:deploy
 ```
 
 ### Endpoints en producción
@@ -305,14 +307,14 @@ export default descriptor;
 
 | Command              | Description                    |
 |----------------------|--------------------------------|
-| `npm run dev`        | Start dev server with hot reload |
-| `npm run build`      | Compile TypeScript             |
-| `npm run migrate`    | Run database migrations        |
-| `npm run seed`       | Seed demo data                 |
-| `npm run db:prepare` | Migrations + seeds + modules (build/Netlify) |
-| `npm run netlify:dev` | Local API via Netlify Dev proxy |
-| `npm run netlify:deploy` | Deploy manual a Netlify   |
-| `npm run typecheck`  | TypeScript type checking       |
+| `pnpm dev`           | Start dev server with hot reload |
+| `pnpm build`         | Compile TypeScript             |
+| `pnpm migrate`       | Run database migrations        |
+| `pnpm seed`          | Seed demo data                 |
+| `pnpm db:prepare`    | Migrations + seeds + modules (build/Netlify) |
+| `pnpm netlify:dev`   | Local API via Netlify Dev proxy |
+| `pnpm netlify:deploy`| Deploy manual a Netlify        |
+| `pnpm typecheck`     | TypeScript type checking       |
 
 ## API Contract
 
