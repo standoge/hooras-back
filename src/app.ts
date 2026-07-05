@@ -6,28 +6,18 @@ import swaggerUi from 'swagger-ui-express';
 import { readFileSync } from 'fs';
 import { parse as parseYaml } from 'yaml';
 import { errorHandler } from './app/middleware/errorHandler';
-
-import healthRoutes from './api/health/health.routes';
-import modulesRoutes from './api/modules/modules.routes';
-import providerConnectionsRoutes from './api/provider-connections/providerConnections.routes';
-import authRoutes from './api/auth/auth.routes';
-import studentDataRoutes from './api/student-data/studentData.routes';
-import meRoutes from './api/me/me.routes';
-import rulesRoutes from './api/rules/rules.routes';
-import projectsRoutes from './api/projects/projects.routes';
-import { projectApplicationsRouter } from './api/projects/projectApplications.routes';
-import importsRoutes from './api/imports/imports.routes';
-import applicationsRoutes from './api/applications/applications.routes';
-import assignmentsRoutes from './api/assignments/assignments.routes';
-import hourLogsRoutes from './api/hour-logs/hourLogs.routes';
-import documentsRoutes from './api/documents/documents.routes';
-import certificatesRoutes from './api/certificates/certificates.routes';
-import reportsRoutes from './api/reports/reports.routes';
-import auditRoutes from './api/audit/audit.routes';
-import webhooksRoutes from './api/webhooks/webhooks.routes';
-import demoAuthRoutes from './demo/demo-auth/routes';
-import demoStudentDataRoutes from './demo/demo-student-data/routes';
 import { authMiddleware } from './app/middleware/auth';
+
+import healthRoutes from './core/health/health.routes';
+import modulesRoutes from './core/modules-admin/modules.routes';
+import providerConnectionsRoutes from './core/provider-connections/providerConnections.routes';
+import authRoutes from './core/auth/auth.routes';
+import studentDataRoutes from './core/student-data/studentData.routes';
+import meRoutes from './core/me/me.routes';
+import auditRoutes from './core/audit/audit.routes';
+import webhooksRoutes from './core/webhooks/webhooks.routes';
+import configRoutes from './core/config/config.routes';
+import adminUsersRoutes from './core/admin-users/adminUsers.routes';
 
 export function createApp() {
   const app = express();
@@ -45,26 +35,16 @@ export function createApp() {
   }
 
   app.use(healthRoutes);
-  app.use('/demo-auth', demoAuthRoutes);
-  app.use('/demo-student-data', demoStudentDataRoutes);
 
   app.use('/api/v1/modules', modulesRoutes);
   app.use('/api/v1/provider-connections', providerConnectionsRoutes);
   app.use('/api/v1/auth', authRoutes);
   app.use('/api/v1/student-data', studentDataRoutes);
   app.use('/api/v1/me', meRoutes);
-  app.use('/api/v1/rules', rulesRoutes);
-  app.use('/api/v1/projects', projectsRoutes);
-  app.use('/api/v1/projects/:projectId/applications', projectApplicationsRouter);
-  app.use('/api/v1/imports', importsRoutes);
-  app.use('/api/v1/applications', applicationsRoutes);
-  app.use('/api/v1/assignments', assignmentsRoutes);
-  app.use('/api/v1/hour-logs', hourLogsRoutes);
-  app.use('/api/v1', documentsRoutes);
-  app.use('/api/v1/certificates', certificatesRoutes);
-  app.use('/api/v1/reports', reportsRoutes);
   app.use('/api/v1/audit-log', auditRoutes);
   app.use('/api/v1/webhooks', webhooksRoutes);
+  app.use('/api/v1/config', configRoutes);
+  app.use('/api/v1/admin-users', adminUsersRoutes);
 
   app.get('/api/v1/capabilities', authMiddleware, async (_req, res, next) => {
     try {

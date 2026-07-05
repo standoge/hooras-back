@@ -12,6 +12,16 @@ export async function seed(knex: Knex): Promise<void> {
     settings: JSON.stringify({ locale: 'es-SV', timezone: 'America/El_Salvador' }),
   });
 
+  await knex('admin_users').del();
+  await knex('admin_users').insert({
+    username: 'admin1',
+    password_hash: hashPassword('demo123'),
+    display_name: 'Admin Sistema',
+    email: 'admin@demo.edu',
+    roles: JSON.stringify(['admin']),
+    active: true,
+  });
+
   await knex('demo_users').del();
   const demoUsers = [
     { username: 'student1', password: 'demo123', external_user_id: 'usr-student-001', external_student_id: 'STU-001', display_name: 'María González', email: 'maria.gonzalez@demo.edu', roles: ['student'] },
@@ -102,45 +112,4 @@ export async function seed(knex: Knex): Promise<void> {
       raw: JSON.stringify(s.raw),
     });
   }
-
-  await knex('requirement_rules').del();
-  await knex('requirement_rules').insert([
-    {
-      name: 'Horas sociales generales - Ingeniería',
-      scope: JSON.stringify({ facultyCode: 'ING', programCode: 'ING-SIS' }),
-      required_hours: 80,
-      category_hours: JSON.stringify({ environmental: 20, community: 40 }),
-      minimum_progress_percentage: 60,
-      required_academic_statuses: JSON.stringify(['active', 'graduate_candidate']),
-      required_course_codes: JSON.stringify([]),
-      active: true,
-    },
-    {
-      name: 'Horas sociales generales - Administración',
-      scope: JSON.stringify({ facultyCode: 'ECO', programCode: 'ADM-001' }),
-      required_hours: 75,
-      category_hours: JSON.stringify({ community: 30 }),
-      minimum_progress_percentage: 50,
-      required_academic_statuses: JSON.stringify(['active']),
-      active: true,
-    },
-    {
-      name: 'Horas sociales - Psicología (egresados)',
-      scope: JSON.stringify({ facultyCode: 'SAL', programCode: 'PSI' }),
-      required_hours: 100,
-      category_hours: JSON.stringify({ community: 50, research: 20 }),
-      minimum_progress_percentage: 90,
-      required_academic_statuses: JSON.stringify(['egresado', 'graduate_candidate']),
-      active: true,
-    },
-  ]);
-
-  await knex('document_requirements').del();
-  await knex('document_requirements').insert([
-    { key: 'student_request', label: 'Formulario de solicitud del estudiante', required: true, allowed_file_types: JSON.stringify(['pdf']), max_file_size_mb: 5, requires_approval: true },
-    { key: 'work_plan', label: 'Plan de trabajo', required: true, allowed_file_types: JSON.stringify(['pdf', 'docx']), max_file_size_mb: 10, requires_approval: true },
-    { key: 'acceptance_letter', label: 'Carta de aceptación del proyecto', required: true, allowed_file_types: JSON.stringify(['pdf']), requires_approval: true },
-    { key: 'final_report', label: 'Informe final', required: true, allowed_file_types: JSON.stringify(['pdf']), max_file_size_mb: 20, requires_approval: true },
-    { key: 'supervisor_evaluation', label: 'Evaluación del supervisor', required: true, allowed_file_types: JSON.stringify(['pdf']), requires_approval: true },
-  ]);
 }
