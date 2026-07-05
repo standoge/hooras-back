@@ -156,4 +156,53 @@ describe('documents acceptance', () => {
       });
     expect(recreateRes.status).toBe(201);
   });
+
+  it('deactivates and reactivates requirement via patch', async () => {
+    const key = `patch-active-${Date.now()}`;
+    const createRes = await request(app)
+      .post('/api/v1/document-requirements')
+      .set(authHeader(adminToken))
+      .send({
+        key,
+        label: 'Patch Active Toggle',
+        required: true,
+        allowedFileTypes: ['application/pdf'],
+      });
+    expect(createRes.status).toBe(201);
+    const id = createRes.body.id;
+
+    const deactivateRes = await request(app)
+      .patch(`/api/v1/document-requirements/${id}`)
+      .set(authHeader(adminToken))
+      .send({ active: false });
+    expect(deactivateRes.status).toBe(200);
+    expect(deactivateRes.body.active).toBe(false);
+
+    const studentListInactive = await request(app)
+      .get('/api/v1/me/document-requirements')
+      .set(authHeader(studentToken));
+    expect(studentListInactive.status).toBe(200);
+    expect(
+      studentListInactive.body.some(
+        (item: { requirement: { id: string } }) => item.requirement.id === id,
+      ),
+    ).toBe(false);
+
+    const reactivateRes = await request(app)
+      .patch(`/api/v1/document-requirements/${id}`)
+      .set(authHeader(adminToken))
+      .send({ active: true });
+    expect(reactivateRes.status).toBe(200);
+    expect(reactivateRes.body.active).toBe(true);
+
+    const studentListActive = await request(app)
+      .get('/api/v1/me/document-requirements')
+      .set(authHeader(studentToken));
+    expect(studentListActive.status).toBe(200);
+    expect(
+      studentListActive.body.some(
+        (item: { requirement: { id: string } }) => item.requirement.id === id,
+      ),
+    ).toBe(true);
+  });
 });
