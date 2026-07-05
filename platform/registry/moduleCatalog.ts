@@ -2,6 +2,7 @@ import type { PlatformModuleDescriptor } from '../module/PlatformModule';
 import applications from '../../modules/applications';
 import assignments from '../../modules/assignments';
 import certificates from '../../modules/certificates';
+import companies from '../../modules/companies';
 import documents from '../../modules/documents';
 import dummyAuthConnector from '../../modules/dummy-auth-connector';
 import dummyStudentDataConnector from '../../modules/dummy-student-data-connector';
@@ -22,6 +23,7 @@ export const BUILTIN_MODULE_DESCRIPTORS: PlatformModuleDescriptor[] = [
   applications,
   assignments,
   certificates,
+  companies,
   documents,
   dummyAuthConnector,
   dummyStudentDataConnector,

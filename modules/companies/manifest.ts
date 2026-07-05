@@ -1,0 +1,16 @@
+export const manifest = {
+  moduleKey: 'companies',
+  displayName: 'Companies',
+  version: '0.1.0',
+  moduleType: 'companies' as any,
+  description: 'Manage companies, organizations, and NGOs for projects and supervisor assignments',
+  author: 'Social Hours Platform',
+  license: 'MIT',
+  platformVersion: '0.1.0',
+  setupTier: 'recommended' as const,
+  dependencies: [] as string[],
+  capabilities: ['companies.list', 'companies.manage'],
+  providedServices: ['companies.v1'],
+  providedContracts: ['companies.v1'],
+  features: [],
+};
