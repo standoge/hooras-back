@@ -29,10 +29,10 @@ info:
 
     |--------|------|---------|
 
-    | GET | /api/v1/me/?, /api/v1/me/applications, /api/v1/me/assignments,
-    /api/v1/me/document-requirements, /api/v1/me/document-uploads,
-    /api/v1/me/hour-logs, /api/v1/me/notifications, /api/v1/me/profile,
-    /api/v1/me/social-services/history, /api/v1/projects/?,
+    | GET | /api/v1/files/.+, /api/v1/me/?, /api/v1/me/applications,
+    /api/v1/me/assignments, /api/v1/me/document-requirements,
+    /api/v1/me/document-uploads, /api/v1/me/hour-logs, /api/v1/me/notifications,
+    /api/v1/me/profile, /api/v1/me/social-services/history, /api/v1/projects/?,
     /api/v1/projects/{id} | yes (published only) |
 
     | POST | /api/v1/auth/introspect, /api/v1/auth/login,
@@ -52,6 +52,7 @@ security:
   - bearerAuth: []
 tags:
   - name: Health
+  - name: Setup
   - name: Modules
   - name: Provider Connections
   - name: Auth
@@ -86,6 +87,186 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /api/v1/setup/status:
+    get:
+      tags: [ Setup ]
+      summary: Get first-run setup status
+      operationId: getSetupStatus
+      security: []
+      responses:
+        "200":
+          description: Setup status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SetupStatus"
+
+  /api/v1/setup/modules:
+    get:
+      tags: [ Setup ]
+      summary: List modules available during setup
+      operationId: listSetupModules
+      security: []
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Module catalog for setup wizard
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SetupModuleOption"
+        "410":
+          description: Setup already completed
+
+  /api/v1/setup/instance:
+    put:
+      tags: [ Setup ]
+      summary: Save instance settings during setup
+      operationId: saveSetupInstance
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetupInstanceInput"
+      responses:
+        "200":
+          description: Updated setup status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SetupStatus"
+        "410":
+          description: Setup already completed
+
+  /api/v1/setup/connectors/{type}:
+    put:
+      tags: [ Setup ]
+      summary: Install and configure an auth or student-data connector
+      operationId: configureSetupConnector
+      security: []
+      parameters:
+        - name: type
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [ auth, student-data ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetupConnectorInput"
+      responses:
+        "200":
+          description: Updated setup status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SetupStatus"
+        "410":
+          description: Setup already completed
+
+  /api/v1/setup/modules:
+    put:
+      tags: [ Setup ]
+      summary: Install and enable selected domain modules
+      operationId: configureSetupModules
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ moduleKeys ]
+              properties:
+                moduleKeys:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        "200":
+          description: Updated setup status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SetupStatus"
+        "410":
+          description: Setup already completed
+
+  /api/v1/setup/admin:
+    post:
+      tags: [ Setup ]
+      summary: Create initial admin user during setup
+      operationId: createSetupAdmin
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetupAdminInput"
+      responses:
+        "200":
+          description: Updated setup status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SetupStatus"
+        "410":
+          description: Setup already completed
+
+  /api/v1/setup/test:
+    post:
+      tags: [ Setup ]
+      summary: Test configured connectors during setup
+      operationId: testSetupConnectors
+      security: []
+      responses:
+        "200":
+          description: Connector test results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SetupConnectorTestResult"
+        "410":
+          description: Setup already completed
+
+  /api/v1/setup/complete:
+    post:
+      tags: [ Setup ]
+      summary: Complete first-run setup
+      operationId: completeSetup
+      security: []
+      responses:
+        "200":
+          description: Setup completed
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ completed ]
+                properties:
+                  completed:
+                    type: boolean
+                  completedAt:
+                    type: string
+                    format: date-time
+                  baseUrl:
+                    type: string
+                    format: uri
+        "410":
+          description: Setup already completed
 
   /api/v1/capabilities:
     get:
@@ -1838,6 +2019,15 @@ paths:
       responses:
         "200":
           description: Success
+  /api/v1/files/.+/:
+    get:
+      tags:
+        - Health
+      summary: Auto-generated from Express route (GET /api/v1/files/.+/)
+      operationId: getApiV1Files.+
+      responses:
+        "200":
+          description: Success
 
 components:
   securitySchemes:
@@ -1932,9 +2122,119 @@ components:
         status:
           type: string
           enum: [ ok, degraded, down ]
+        db:
+          type: string
+          enum: [ ok, down ]
+        setupCompleted:
+          type: boolean
         checkedAt:
           type: string
           format: date-time
+
+    SetupStatus:
+      type: object
+      required: [ completed, collegeName, settings, steps, missingRequirements ]
+      properties:
+        completed:
+          type: boolean
+        collegeName:
+          type: string
+        settings:
+          type: object
+        steps:
+          type: object
+        missingRequirements:
+          type: array
+          items:
+            type: string
+
+    SetupModuleOption:
+      type: object
+      required: [ moduleKey, displayName, version, moduleType, setupTier ]
+      properties:
+        moduleKey:
+          type: string
+        displayName:
+          type: string
+        version:
+          type: string
+        moduleType:
+          type: string
+        description:
+          type: string
+        dependencies:
+          type: array
+          items:
+            type: string
+        setupTier:
+          type: string
+          enum: [ required, recommended, optional ]
+        configurationSchema:
+          type: object
+        installed:
+          type: boolean
+
+    SetupInstanceInput:
+      type: object
+      required: [ collegeName ]
+      properties:
+        collegeName:
+          type: string
+        locale:
+          type: string
+        timezone:
+          type: string
+        demoMode:
+          type: boolean
+
+    SetupConnectorInput:
+      type: object
+      required: [ moduleKey ]
+      properties:
+        moduleKey:
+          type: string
+        useDemoProvider:
+          type: boolean
+        values:
+          type: object
+        secrets:
+          type: object
+          additionalProperties:
+            type: string
+
+    SetupAdminInput:
+      type: object
+      required: [ username, password ]
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+        displayName:
+          type: string
+        email:
+          type: string
+          format: email
+
+    SetupConnectorTestResult:
+      type: object
+      required: [ results, allOk ]
+      properties:
+        allOk:
+          type: boolean
+        results:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+              moduleKey:
+                type: string
+              ok:
+                type: boolean
+              message:
+                type: string
 
     ModuleCapability:
       type: object

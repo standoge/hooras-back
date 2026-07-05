@@ -22,9 +22,11 @@ docker compose up -d
 # Install dependencies
 pnpm install
 
-# Run migrations and start dev server (seeds run automatically on first boot)
+# Run migrations and start dev server
 pnpm dev
 ```
+
+On first visit, open the frontend at `http://localhost:5173` — you will be redirected to the **setup wizard** (`/setup`) to configure connectors, domain modules, and the initial admin account. The API exposes public setup endpoints at `/api/v1/setup/*` until setup is completed.
 
 The API runs at `http://localhost:3000`. Swagger UI: `http://localhost:3000/docs`
 
@@ -275,7 +277,22 @@ Modules communicate via `ServiceRegistry` using stable contract keys:
 4. **Configure** — `PUT /api/v1/modules/{moduleKey}/config`
 5. **Disable / Uninstall** — uninstall rolls back module migrations
 
-On first boot, all MVP modules are auto-installed and enabled.
+On first boot, use the setup wizard (or `POST /api/v1/setup/*`) to install only the modules you need. Existing databases with modules already installed are migrated to `setupCompleted: true` automatically.
+
+### Setup API (first run only)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/v1/setup/status` | Setup progress (always public) |
+| GET | `/api/v1/setup/modules` | Module catalog with `setupTier` |
+| PUT | `/api/v1/setup/instance` | College name and locale |
+| PUT | `/api/v1/setup/connectors/{auth\|student-data}` | Configure active connector |
+| PUT | `/api/v1/setup/modules` | Install/enable domain modules |
+| POST | `/api/v1/setup/admin` | Create initial admin |
+| POST | `/api/v1/setup/test` | Test connectors |
+| POST | `/api/v1/setup/complete` | Mark setup complete |
+
+Mutation endpoints return `410 Gone` after setup is completed.
 
 ### Creating a domain module
 
