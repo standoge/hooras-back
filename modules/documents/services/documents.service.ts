@@ -91,9 +91,46 @@ export const documentsService: DocumentsServiceV1 = {
     const allowed = Array.isArray(requirement.allowedFileTypes)
       ? (requirement.allowedFileTypes as string[])
       : parseJson<string[]>(requirement.allowedFileTypes as string);
-    if (allowed.length && !allowed.includes(fileMeta.mimeType)) {
-      throw new BadRequestError(`File type ${fileMeta.mimeType} is not allowed`);
+
+    if (allowed.length) {
+      // allowedFileTypes stores extensions (e.g. 'pdf', 'docx') but fileMeta.mimeType
+      // is a full MIME type (e.g. 'application/pdf'). Normalise both sides before comparing.
+      const MIME_BY_EXT: Record<string, string[]> = {
+        pdf:  ['application/pdf'],
+        doc:  ['application/msword'],
+        docx: ['application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+        xls:  ['application/vnd.ms-excel'],
+        xlsx: ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
+        ppt:  ['application/vnd.ms-powerpoint'],
+        pptx: ['application/vnd.openxmlformats-officedocument.presentationml.presentation'],
+        png:  ['image/png'],
+        jpg:  ['image/jpeg'],
+        jpeg: ['image/jpeg'],
+        gif:  ['image/gif'],
+        webp: ['image/webp'],
+        svg:  ['image/svg+xml'],
+        txt:  ['text/plain'],
+        csv:  ['text/csv', 'application/csv'],
+        zip:  ['application/zip', 'application/x-zip-compressed'],
+        mp4:  ['video/mp4'],
+        mp3:  ['audio/mpeg'],
+      };
+
+      const allowedMimes = allowed.flatMap((ext) => MIME_BY_EXT[ext.toLowerCase()] ?? [ext]);
+
+      // Also accept if the raw extension string itself was stored as a MIME-like value
+      const incomingMime = fileMeta.mimeType.toLowerCase();
+      const isAllowed =
+        allowedMimes.includes(incomingMime) ||
+        allowed.some((ext) => incomingMime === ext.toLowerCase());
+
+      if (!isAllowed) {
+        throw new BadRequestError(
+          `File type not allowed. Accepted formats: ${allowed.join(', ')}`,
+        );
+      }
     }
+
     const maxMb = requirement.maxFileSizeMb as number | undefined;
     if (maxMb && fileMeta.sizeBytes > maxMb * 1024 * 1024) {
       throw new BadRequestError(`File exceeds maximum size of ${maxMb}MB`);
