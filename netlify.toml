@@ -15,7 +15,7 @@
     "modules/**/migrations/**",
     "dist/database/migrations/**",
     "dist/database/seeds/**",
-    "dist/modules/**/migrations/**",
+    "dist/modules/**",
   ]
 
 [[redirects]]

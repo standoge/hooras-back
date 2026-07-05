@@ -10,7 +10,7 @@
     "migrate": "tsx node_modules/knex/bin/cli.js migrate:latest --knexfile knexfile.ts",
     "migrate:rollback": "tsx node_modules/knex/bin/cli.js migrate:rollback --knexfile knexfile.ts",
     "seed": "tsx node_modules/knex/bin/cli.js seed:run --knexfile knexfile.ts",
-    "db:prepare": "node dist/scripts/db-prepare.js",
+    "db:prepare": "tsx scripts/db-prepare.ts",
     "netlify:dev": "netlify dev",
     "netlify:deploy": "netlify deploy --prod",
     "lint": "eslint . --ext .ts",

@@ -1,8 +1,9 @@
 import knex, { Knex } from 'knex';
 import path from 'path';
 import { env } from '../config/env';
+import { isCompiledRuntime } from '../config/runtime';
 
-const migrationExtension = __filename.endsWith('.js') ? 'js' : 'ts';
+const migrationExtension = isCompiledRuntime() ? 'js' : 'ts';
 
 const config: Knex.Config = {
   client: 'pg',

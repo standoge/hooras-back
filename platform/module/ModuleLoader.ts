@@ -1,33 +1,34 @@
 import fs from 'fs';
 import path from 'path';
 import { pathToFileURL } from 'url';
+import { isCompiledRuntime, resolveModulesRoot } from '../../config/runtime';
 import { PlatformModuleDescriptor } from './PlatformModule';
-
-const DEFAULT_MODULES_DIR = path.join(process.cwd(), 'modules');
 
 export class ModuleLoader {
   /**
    * Discover module descriptors from a directory.
    * Each subdirectory with an index.ts/js exporting `default` as PlatformModuleDescriptor is loaded.
    */
-  static async loadFromPath(modulesDir: string = DEFAULT_MODULES_DIR): Promise<PlatformModuleDescriptor[]> {
-    if (!fs.existsSync(modulesDir)) {
+  static async loadFromPath(modulesDir?: string): Promise<PlatformModuleDescriptor[]> {
+    const resolvedDir = modulesDir ?? resolveModulesRoot();
+    if (!fs.existsSync(resolvedDir)) {
       return [];
     }
 
-    const entries = fs.readdirSync(modulesDir, { withFileTypes: true });
+    const extension = isCompiledRuntime() ? 'js' : 'ts';
+    const entries = fs.readdirSync(resolvedDir, { withFileTypes: true });
     const descriptors: PlatformModuleDescriptor[] = [];
 
     for (const entry of entries) {
       if (!entry.isDirectory()) continue;
 
-      const indexTs = path.join(modulesDir, entry.name, 'index.ts');
-      const indexJs = path.join(modulesDir, entry.name, 'index.js');
-      const indexPath = fs.existsSync(indexTs) ? indexTs : fs.existsSync(indexJs) ? indexJs : null;
-      if (!indexPath) continue;
+      const indexPath = path.join(resolvedDir, entry.name, `index.${extension}`);
+      if (!fs.existsSync(indexPath)) continue;
 
       try {
-        const loaded = await import(pathToFileURL(indexPath).href);
+        const loaded = isCompiledRuntime()
+          ? require(indexPath)
+          : await import(pathToFileURL(indexPath).href);
         const descriptor = (loaded.default ?? loaded.module) as PlatformModuleDescriptor;
         if (!descriptor?.moduleKey || !descriptor?.instance || !descriptor?.manifest) {
           console.warn(`[ModuleLoader] Skipping ${entry.name}: invalid descriptor export`);
