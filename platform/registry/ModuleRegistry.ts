@@ -28,6 +28,18 @@ interface CatalogEntry {
   descriptor: PlatformModuleDescriptor;
 }
 
+function parseStoredJson<T>(value: unknown, fallback: T): T {
+  if (value == null || value === '') return fallback;
+  if (typeof value === 'string') {
+    try {
+      return JSON.parse(value) as T;
+    } catch {
+      return fallback;
+    }
+  }
+  return value as T;
+}
+
 class ModuleRegistryClass {
   private catalog = new Map<string, CatalogEntry>();
   private hookUnsubs = new Map<string, () => void>();
@@ -361,10 +373,16 @@ class ModuleRegistryClass {
 
     if (existing) {
       await db('module_configs').where({ module_key: moduleKey }).update({
-        values: JSON.stringify({ ...(JSON.parse(existing.values || '{}')), ...values }),
+        values: JSON.stringify({
+          ...parseStoredJson<Record<string, unknown>>(existing.values, {}),
+          ...values,
+        }),
         encrypted_secrets: JSON.stringify(mergedSecrets),
         secret_names: JSON.stringify([
-          ...new Set([...secretNames, ...(JSON.parse(existing.secret_names || '[]'))]),
+          ...new Set([
+            ...secretNames,
+            ...parseStoredJson<string[]>(existing.secret_names, []),
+          ]),
         ]),
         updated_at: new Date(),
       });
