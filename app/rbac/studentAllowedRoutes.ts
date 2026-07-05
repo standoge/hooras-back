@@ -19,6 +19,7 @@ export const STUDENT_ALLOWED_ROUTES: AllowedRoute[] = [
   { method: 'GET', pattern: /^\/api\/v1\/me\/notifications$/ },
   { method: 'PATCH', pattern: /^\/api\/v1\/me\/notifications\/[^/]+\/read$/ },
   { method: 'POST', pattern: /^\/api\/v1\/me\/evidence$/ },
+  { method: 'GET', pattern: /^\/api\/v1\/files\/.+$/ },
   { method: 'GET', pattern: /^\/api\/v1\/me\/social-services\/history$/ },
   { method: 'GET', pattern: /^\/api\/v1\/projects\/?$/ },
   { method: 'GET', pattern: /^\/api\/v1\/projects\/[^/]+$/ },

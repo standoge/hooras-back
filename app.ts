@@ -22,6 +22,7 @@ import auditRoutes from './core/audit/audit.routes';
 import webhooksRoutes from './core/webhooks/webhooks.routes';
 import configRoutes from './core/config/config.routes';
 import adminUsersRoutes from './core/admin-users/adminUsers.routes';
+import filesRoutes from './core/files/files.routes';
 
 export function createApp() {
   const app = express();
@@ -56,6 +57,7 @@ export function createApp() {
   app.use('/api/v1/webhooks', webhooksRoutes);
   app.use('/api/v1/config', configRoutes);
   app.use('/api/v1/admin-users', adminUsersRoutes);
+  app.use('/api/v1/files', filesRoutes);
 
   app.get('/api/v1/capabilities', authMiddleware, async (_req, res, next) => {
     try {
