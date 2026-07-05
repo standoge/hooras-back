@@ -1,4 +1,5 @@
 import { BadRequestError, NotFoundError } from '../../app/utils/errors';
+import { resolveBundledApiBaseUrl, usesBundledApiBaseUrl } from '../../config/bundledProvider';
 import { StudentDataConnectorModule } from '../../platform/contracts/studentData.contract';
 import {
   AcademicProfile,
@@ -8,7 +9,16 @@ import {
   StudentSearchResult,
 } from '../../platform/types';
 import { buildAcademicProfile } from './demo-student-data/profiles';
+import {
+  getDemoStudentAcademicProfile,
+  getDemoStudentProgramProgress,
+  getProviderSchema,
+  listDemoPrograms,
+  searchDemoStudents,
+} from './demo-student-data/service';
 import { dummyStudentDataManifest } from './manifest';
+
+const BUNDLED_PATH = '/demo-student-data';
 
 export class DummyStudentDataConnector implements StudentDataConnectorModule {
   readonly moduleKey = 'dummy-student-data-connector';
@@ -23,11 +33,25 @@ export class DummyStudentDataConnector implements StudentDataConnectorModule {
   }
 
   async configure(values: Record<string, unknown>, secrets: Record<string, string>): Promise<void> {
-    if (secrets.apiBaseUrl) this.apiBaseUrl = secrets.apiBaseUrl;
     if (values.providerProfile) this.providerProfile = String(values.providerProfile);
+    this.apiBaseUrl = resolveBundledApiBaseUrl(BUNDLED_PATH, secrets.apiBaseUrl);
+  }
+
+  private usesBundledDemoStudentData(): boolean {
+    return usesBundledApiBaseUrl(this.apiBaseUrl, BUNDLED_PATH);
   }
 
   async testConnection(): Promise<ModuleTestResult> {
+    if (this.usesBundledDemoStudentData()) {
+      return {
+        moduleKey: this.moduleKey,
+        status: 'success',
+        contract: 'student_data.v1',
+        message: 'Bundled demo student-data provider active',
+        checkedAt: new Date().toISOString(),
+      };
+    }
+
     try {
       const url = `${this.apiBaseUrl}/schema?providerProfile=${this.providerProfile}`;
       const res = await fetch(url);
@@ -76,6 +100,23 @@ export class DummyStudentDataConnector implements StudentDataConnectorModule {
 
   async searchStudents(query: string): Promise<StudentSearchResult[]> {
     this.assertCapability('student.search');
+
+    if (this.usesBundledDemoStudentData()) {
+      const data = await searchDemoStudents(query, this.providerProfile);
+      return data.map((s) => {
+        const profile = s.raw ? buildAcademicProfile(s.externalStudentId, this.providerProfile, s.raw) : null;
+        return {
+          studentRef: `student:${s.externalStudentId}`,
+          externalStudentId: s.externalStudentId,
+          displayName: s.displayName,
+          email: s.email,
+          programCode: profile?.programCode,
+          programName: profile?.programName,
+          resolvedByModule: this.moduleKey,
+        };
+      });
+    }
+
     const url = `${this.apiBaseUrl}/students?query=${encodeURIComponent(query)}&${this.profileParam()}`;
     const res = await fetch(url);
     const data = await res.json() as Array<{ externalStudentId: string; displayName: string; email?: string; raw?: unknown }>;
@@ -96,6 +137,12 @@ export class DummyStudentDataConnector implements StudentDataConnectorModule {
   async getStudentProfile(studentRef: string): Promise<AcademicProfile> {
     this.assertCapability('student.profile.read');
     const externalStudentId = studentRef.replace(/^student:/, '');
+
+    if (this.usesBundledDemoStudentData()) {
+      const profile = await getDemoStudentAcademicProfile(externalStudentId, this.providerProfile);
+      return { ...profile, studentRef };
+    }
+
     const url = `${this.apiBaseUrl}/students/${externalStudentId}/academic-profile?${this.profileParam()}`;
     const res = await fetch(url);
     if (!res.ok) throw new NotFoundError('Student not found');
@@ -105,6 +152,11 @@ export class DummyStudentDataConnector implements StudentDataConnectorModule {
 
   async getProgramProgress(externalStudentId: string): Promise<Record<string, unknown>> {
     this.assertCapability('student.progress.read');
+
+    if (this.usesBundledDemoStudentData()) {
+      return getDemoStudentProgramProgress(externalStudentId, this.providerProfile);
+    }
+
     const url = `${this.apiBaseUrl}/students/${externalStudentId}/program-progress?${this.profileParam()}`;
     const res = await fetch(url);
     if (!res.ok) throw new NotFoundError('Student not found');
@@ -118,6 +170,11 @@ export class DummyStudentDataConnector implements StudentDataConnectorModule {
 
   async getPrograms(): Promise<Record<string, unknown>[]> {
     this.assertCapability('student.programs.read');
+
+    if (this.usesBundledDemoStudentData()) {
+      return listDemoPrograms();
+    }
+
     const url = `${this.apiBaseUrl}/programs?${this.profileParam()}`;
     const res = await fetch(url);
     return res.json() as Promise<Record<string, unknown>[]>;
@@ -125,6 +182,11 @@ export class DummyStudentDataConnector implements StudentDataConnectorModule {
 
   async getSchema(): Promise<ProviderSchema> {
     this.assertCapability('student.schema.read');
+
+    if (this.usesBundledDemoStudentData()) {
+      return getProviderSchema(this.providerProfile);
+    }
+
     const url = `${this.apiBaseUrl}/schema?${this.profileParam()}`;
     const res = await fetch(url);
     return res.json() as Promise<ProviderSchema>;

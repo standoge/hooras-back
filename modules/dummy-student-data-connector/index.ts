@@ -1,4 +1,4 @@
-import { env } from '../../config/env';
+import { resolvePublicBaseUrl } from '../../config/publicUrl';
 import { PlatformModuleDescriptor } from '../../platform/module/PlatformModule';
 import { dummyStudentDataConnector } from './DummyStudentDataConnector';
 import { dummyStudentDataManifest } from './manifest';
@@ -12,7 +12,7 @@ const descriptor: PlatformModuleDescriptor = {
   getDefaultConfig() {
     return {
       values: { providerProfile: 'progress_percentage' },
-      secrets: { apiBaseUrl: `${env.BASE_URL}/demo-student-data` },
+      secrets: { apiBaseUrl: `${resolvePublicBaseUrl()}/demo-student-data` },
     };
   },
 
