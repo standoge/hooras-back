@@ -33,16 +33,23 @@ export function parseCorsOrigins(raw: string): CorsOriginConfig {
   return { allowAll: false, origins };
 }
 
+const UPLOAD_CORS_OPTIONS: Pick<CorsOptions, 'methods' | 'allowedHeaders'> = {
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Authorization', 'Content-Type', 'Accept', 'X-Requested-With'],
+};
+
 export function resolveCorsOptions(config: CorsOriginConfig): CorsOptions {
   if (config.allowAll) {
     return {
       origin: true,
       credentials: true,
+      ...UPLOAD_CORS_OPTIONS,
     };
   }
 
   return {
     origin: config.origins,
     credentials: true,
+    ...UPLOAD_CORS_OPTIONS,
   };
 }

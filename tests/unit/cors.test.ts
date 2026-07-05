@@ -44,10 +44,16 @@ describe('parseCorsOrigins', () => {
 });
 
 describe('resolveCorsOptions', () => {
+  const uploadOptions = {
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Authorization', 'Content-Type', 'Accept', 'X-Requested-With'],
+  };
+
   it('reflects any origin when all origins are allowed', () => {
     expect(resolveCorsOptions({ allowAll: true })).toEqual({
       origin: true,
       credentials: true,
+      ...uploadOptions,
     });
   });
 
@@ -60,6 +66,7 @@ describe('resolveCorsOptions', () => {
     ).toEqual({
       origin: ['http://localhost:5173'],
       credentials: true,
+      ...uploadOptions,
     });
   });
 });
