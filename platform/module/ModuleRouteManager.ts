@@ -13,7 +13,7 @@ class ModuleRouteManagerClass {
     if (this.registered.has(moduleKey)) return;
 
     for (const { path, router } of registrations) {
-      const gate = Router();
+      const gate = Router({ mergeParams: true });
       gate.use((req: Request, res: Response, next: NextFunction) => {
         if (!this.enabled.has(moduleKey)) {
           return res.status(503).json({
