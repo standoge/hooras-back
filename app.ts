@@ -22,6 +22,10 @@ import adminUsersRoutes from './core/admin-users/adminUsers.routes';
 export function createApp() {
   const app = express();
 
+  app.get('/', (_req, res) => {
+    res.redirect('/docs');
+  });
+
   app.use(helmet({ contentSecurityPolicy: false }));
   app.use(cors());
   app.use(express.json());

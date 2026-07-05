@@ -1,0 +1,25 @@
+[build]
+  command = "npm run build && npm run db:prepare"
+  functions = "netlify/functions"
+  publish = "public"
+
+[build.environment]
+  NODE_VERSION = "20"
+  SKIP_RUNTIME_MIGRATIONS = "true"
+
+[functions]
+  node_bundler = "esbuild"
+  external_node_modules = ["express", "pg", "knex"]
+  included_files = [
+    "openapi.yml",
+    "modules/**/migrations/**",
+    "dist/database/migrations/**",
+    "dist/database/seeds/**",
+    "dist/modules/**/migrations/**",
+  ]
+
+[[redirects]]
+  force = true
+  from = "/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200

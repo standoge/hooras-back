@@ -23,8 +23,12 @@
     "config/**/*",
     "core/**/*",
     "database/**/*",
+    "knexfile.ts",
     "modules/**/*",
-    "platform/**/*"
+    "netlify/functions/**/*",
+    "platform/**/*",
+    "scripts/**/*",
+    "server/**/*"
   ],
   "exclude": ["node_modules", "dist"]
 }
