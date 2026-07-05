@@ -5,7 +5,7 @@ import { authMiddleware } from '../../app/middleware/auth';
 import { ForbiddenError, NotFoundError } from '../../app/utils/errors';
 import { getStorageProvider } from '../../app/storage/getStorageProvider';
 
-const STAFF_ROLES = ['admin', 'coordinator', 'auditor', 'faculty_supervisor'] as const;
+const STAFF_ROLES = ['admin', 'coordinator', 'auditor', 'faculty_supervisor', 'external_supervisor'] as const;
 
 const router = Router();
 
