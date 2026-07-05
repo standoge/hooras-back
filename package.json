@@ -16,8 +16,10 @@
     "lint": "eslint . --ext .ts",
     "typecheck": "tsc --noEmit"
   },
+  "packageManager": "pnpm@10.33.0",
   "engines": {
-    "node": ">=18"
+    "node": ">=18",
+    "pnpm": ">=10"
   },
   "dependencies": {
     "cors": "^2.8.5",
