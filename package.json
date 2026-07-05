@@ -11,8 +11,8 @@
     "migrate:rollback": "tsx node_modules/knex/bin/cli.js migrate:rollback --knexfile knexfile.ts",
     "seed": "tsx node_modules/knex/bin/cli.js seed:run --knexfile knexfile.ts",
     "db:prepare": "tsx scripts/db-prepare.ts",
-    "netlify:dev": "netlify dev",
-    "netlify:deploy": "netlify deploy --prod",
+    "netlify:dev": "pnpm dlx netlify-cli dev",
+    "netlify:deploy": "pnpm dlx netlify-cli deploy --prod",
     "lint": "eslint . --ext .ts",
     "typecheck": "tsc --noEmit"
   },
@@ -43,7 +43,6 @@
     "@types/node": "^22.10.5",
     "@types/swagger-ui-express": "^4.1.7",
     "@types/uuid": "^10.0.0",
-    "netlify-cli": "^22.2.1",
     "tsx": "^4.19.2",
     "typescript": "^5.7.3"
   }
