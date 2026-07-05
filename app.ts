@@ -1,10 +1,10 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import path from 'path';
 import swaggerUi from 'swagger-ui-express';
 import { readFileSync } from 'fs';
 import { parse as parseYaml } from 'yaml';
+import { resolveBundledAsset } from './config/runtime';
 import { errorHandler } from './app/middleware/errorHandler';
 import { authMiddleware } from './app/middleware/auth';
 
@@ -30,7 +30,7 @@ export function createApp() {
   app.use(cors());
   app.use(express.json());
 
-  const openapiPath = path.join(process.cwd(), 'openapi.yml');
+  const openapiPath = resolveBundledAsset('openapi.yml');
   try {
     const spec = parseYaml(readFileSync(openapiPath, 'utf8'));
     app.use('/docs', swaggerUi.serve, swaggerUi.setup(spec));

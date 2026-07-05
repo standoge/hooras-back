@@ -1,5 +1,5 @@
 import path from 'path';
-import { isCompiledRuntime } from '../../config/runtime';
+import { resolveModulesRoot } from '../../config/runtime';
 import db from '../../database';
 
 export interface ModuleMigrationConfig {
@@ -15,10 +15,7 @@ export function moduleMigrationConfig(moduleKey: string, migrationsDir: string):
 }
 
 export function resolveModuleMigrationsDir(moduleKey: string): string {
-  const modulesRoot = isCompiledRuntime()
-    ? path.join(process.cwd(), 'dist', 'modules')
-    : path.join(process.cwd(), 'modules');
-  return path.join(modulesRoot, moduleKey, 'migrations');
+  return path.join(resolveModulesRoot(), moduleKey, 'migrations');
 }
 
 export async function runModuleMigrations(config: ModuleMigrationConfig): Promise<void> {

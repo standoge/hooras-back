@@ -14,9 +14,9 @@
   included_files = [
     "openapi.yml",
     "modules/**/migrations/**",
+    "dist/modules/**/migrations/**",
     "dist/database/migrations/**",
     "dist/database/seeds/**",
-    "dist/modules/**",
   ]
 
 [[redirects]]
