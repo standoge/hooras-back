@@ -4,6 +4,8 @@ import helmet from 'helmet';
 import swaggerUi from 'swagger-ui-express';
 import { readFileSync } from 'fs';
 import { parse as parseYaml } from 'yaml';
+import { env } from './config/env';
+import { resolveCorsOptions } from './config/cors';
 import { resolveBundledAsset } from './config/runtime';
 import { errorHandler } from './app/middleware/errorHandler';
 import { authMiddleware, optionalAuth } from './app/middleware/auth';
@@ -29,7 +31,7 @@ export function createApp() {
   });
 
   app.use(helmet({ contentSecurityPolicy: false }));
-  app.use(cors());
+  app.use(cors(resolveCorsOptions(env.CORS_ORIGINS)));
   app.use(express.json());
 
   app.use('/api/v1', optionalAuth, studentWhitelist);

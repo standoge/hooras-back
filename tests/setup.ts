@@ -9,3 +9,4 @@ process.env.JWT_SECRET =
 process.env.ENCRYPTION_KEY =
   process.env.ENCRYPTION_KEY ?? '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
 process.env.WEBHOOK_SECRET = process.env.WEBHOOK_SECRET ?? 'test-webhook-secret';
+process.env.CORS_ORIGINS = process.env.CORS_ORIGINS ?? '*';
