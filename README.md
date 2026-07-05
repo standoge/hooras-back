@@ -27,6 +27,68 @@ npm run dev
 
 The API runs at `http://localhost:3000`. Swagger UI: `http://localhost:3000/docs`
 
+## Deploy en Netlify
+
+Este backend se despliega en Netlify como una **serverless function** (`serverless-http` + Express). PostgreSQL debe estar alojado externamente (por ejemplo [Neon](https://neon.tech), [Supabase](https://supabase.com) o [Railway](https://railway.app)).
+
+### 1. Base de datos
+
+Crea una instancia PostgreSQL y copia la URL de conexión (`DATABASE_URL`).
+
+### 2. Variables de entorno en Netlify
+
+En **Site configuration → Environment variables**, configura:
+
+| Variable | Descripción |
+|----------|-------------|
+| `NODE_ENV` | `production` |
+| `DATABASE_URL` | URL de PostgreSQL (con SSL si el proveedor lo exige) |
+| `JWT_SECRET` | Cadena aleatoria de al menos 16 caracteres |
+| `ENCRYPTION_KEY` | 64 caracteres hex (32 bytes) |
+| `WEBHOOK_SECRET` | Secreto para firmar webhooks |
+| `BASE_URL` | URL del sitio Netlify, p. ej. `https://tu-sitio.netlify.app` |
+| `STUDENT_PROFILE_CACHE_TTL_MINUTES` | Opcional, default `30` |
+
+`SKIP_RUNTIME_MIGRATIONS=true` ya está definido en `netlify.toml` para que las migraciones corran solo en el build.
+
+### 3. Conectar el repositorio
+
+1. Sube el proyecto a GitHub/GitLab/Bitbucket.
+2. En [Netlify](https://app.netlify.com), **Add new site → Import an existing project**.
+3. Netlify detectará `netlify.toml` con:
+   - **Build command:** `npm run build && npm run db:prepare`
+   - **Functions:** `netlify/functions`
+   - **Publish directory:** `public`
+
+### 4. Desarrollo local con Netlify
+
+```bash
+npm install
+docker compose up -d
+cp .env.example .env
+npm run build
+npm run netlify:dev
+```
+
+La API quedará disponible en `http://localhost:8888` (proxy de Netlify Dev).
+
+### 5. Deploy manual (opcional)
+
+```bash
+npx netlify login
+npx netlify init
+npm run netlify:deploy
+```
+
+### Endpoints en producción
+
+| Ruta | Descripción |
+|------|-------------|
+| `/` | Redirige a `/docs` |
+| `/docs` | Swagger UI |
+| `/health` | Health check |
+| `/api/v1/*` | API REST |
+
 ### Demo Credentials
 
 | Username      | Password | Role               |
@@ -239,6 +301,9 @@ export default descriptor;
 | `npm run build`      | Compile TypeScript             |
 | `npm run migrate`    | Run database migrations        |
 | `npm run seed`       | Seed demo data                 |
+| `npm run db:prepare` | Migrations + seeds + modules (build/Netlify) |
+| `npm run netlify:dev` | Local API via Netlify Dev proxy |
+| `npm run netlify:deploy` | Deploy manual a Netlify   |
 | `npm run typecheck`  | TypeScript type checking       |
 
 ## API Contract
