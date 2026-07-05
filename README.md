@@ -144,15 +144,94 @@ curl -X POST http://localhost:3000/api/v1/rules/evaluate \
 ## Architecture
 
 ```
-Core Platform API
-  └── Module Registry (in-process)
-        ├── dummy-auth-connector → /demo-auth/*
-        └── dummy-student-data-connector → /demo-student-data/*
+Core (src/core/) — always on, not installable
+  ├── health, auth, student-data, provider-connections
+  ├── modules-admin (install/enable/configure modules)
+  ├── config (instance settings + SMTP)
+  ├── admin-users (platform administrators)
+  ├── me (identity only: GET /api/v1/me)
+  ├── audit-log, webhooks
+  └── student-cache (shared student_refs cache)
+
+Platform (src/platform/)
+  ├── ModuleLoader — discovers src/modules/*
+  ├── ModuleRegistry — lifecycle + migrations per module
+  ├── ServiceRegistry — cross-module contracts (rules.v1, hours.v1, …)
+  └── EventBus — async hooks between modules
+
+Domain modules (src/modules/) — installable, own migrations + routes
+  ├── dummy-auth-connector, dummy-student-data-connector
+  ├── notifications, rules, projects, assignments, applications
+  ├── hours, documents, certificates, imports
+  ├── student-profile, reports
+  └── each module: manifest, services/, routes/, migrations/
 ```
 
-External integrations (ZAVU, n8n, Firecrawl) are stubbed for MVP demo purposes.
+External integrations (ZAVU/n8n/Firecrawl) are implemented inside their respective modules (`notifications`, `projects`, `imports`).
 
-## Scripts
+## Module System
+
+The platform uses an Odoo-like module model. The **core** handles discovery, install/uninstall, enable/disable, configuration (including encrypted API keys/SMTP), feature toggles, and health checks. **Domain features** are modules under `src/modules/<moduleKey>/`.
+
+### Service contracts
+
+Modules communicate via `ServiceRegistry` using stable contract keys:
+
+| Contract | Provider module |
+|----------|-----------------|
+| `notifications.v1` | notifications |
+| `rules.v1` | rules |
+| `projects.v1` | projects |
+| `assignments.v1` | assignments |
+| `hours.v1` | hours |
+| `documents.v1` | documents |
+| `student-profile.v1` | student-profile |
+
+### Module lifecycle
+
+1. **Discover** — `GET /api/v1/modules/available`
+2. **Install** — creates module tables (own Knex migrations) + seeds
+3. **Enable** — mounts routes, registers services, validates dependencies
+4. **Configure** — `PUT /api/v1/modules/{moduleKey}/config`
+5. **Disable / Uninstall** — uninstall rolls back module migrations
+
+On first boot, all MVP modules are auto-installed and enabled.
+
+### Creating a domain module
+
+```
+src/modules/my-module/
+  index.ts              # PlatformModuleDescriptor (export default)
+  manifest.ts           # moduleKey, dependencies, requiredServices, providedServices
+  contract.ts           # optional public service interface
+  services/             # business logic
+  routes/               # Express routers
+  migrations/           # per-module schema (install/uninstall)
+  seeds/                # optional onInstall data
+```
+
+Example `index.ts`:
+
+```typescript
+import { createBaseDomainModule } from '../../platform/module/BaseDomainModule';
+import { moduleMigrationConfig, resolveModuleMigrationsDir } from '../../platform/module/ModuleMigrationRunner';
+import { manifest } from './manifest';
+import myRoutes from './routes/my.routes';
+
+const descriptor = {
+  moduleKey: manifest.moduleKey,
+  manifest,
+  instance: createBaseDomainModule(manifest),
+  getMigrations() {
+    return moduleMigrationConfig(manifest.moduleKey, resolveModuleMigrationsDir(manifest.moduleKey));
+  },
+  getRoutes() {
+    return [{ path: '/api/v1/my-feature', router: myRoutes }];
+  },
+};
+
+export default descriptor;
+```
 
 | Command              | Description                    |
 |----------------------|--------------------------------|
@@ -166,12 +245,4 @@ External integrations (ZAVU, n8n, Firecrawl) are stubbed for MVP demo purposes.
 
 All endpoints are defined in [openapi.yml](./openapi.yml). The spec is served at `/docs` via Swagger UI.
 
-## Module System
-
-Connector modules implement stable contracts (`auth.v1`, `student_data.v1`) and are registered at startup. Enable/disable/configure via:
-
-- `GET/POST /api/v1/modules/{moduleKey}/enable|disable`
-- `PUT /api/v1/modules/{moduleKey}/config`
-- `POST /api/v1/modules/{moduleKey}/test`
-
-Student-data connector supports provider profiles: `progress_percentage`, `credits_based`, `subjects_based`, `status_code_based`.
+## Scripts

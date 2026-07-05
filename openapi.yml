@@ -76,6 +76,22 @@ paths:
                     items:
                       $ref: "#/components/schemas/ProviderCapability"
 
+  /api/v1/modules/available:
+    get:
+      tags: [Modules]
+      summary: List available modules in the catalog
+      operationId: listAvailableModules
+      description: Requires admin role. Returns discoverable modules and whether each is installed.
+      responses:
+        "200":
+          description: Available modules
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AvailableModule"
+
   /api/v1/modules:
     get:
       tags: [Modules]
@@ -122,6 +138,42 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ModuleManifest"
+
+  /api/v1/modules/{moduleKey}/install:
+    post:
+      tags: [Modules]
+      summary: Install a module
+      operationId: installModule
+      parameters:
+        - $ref: "#/components/parameters/ModuleKey"
+      responses:
+        "201":
+          description: Module installed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InstalledModule"
+
+  /api/v1/modules/{moduleKey}/uninstall:
+    post:
+      tags: [Modules]
+      summary: Uninstall a module
+      operationId: uninstallModule
+      parameters:
+        - $ref: "#/components/parameters/ModuleKey"
+      responses:
+        "200":
+          description: Module uninstalled
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [moduleKey, uninstalled]
+                properties:
+                  moduleKey:
+                    type: string
+                  uninstalled:
+                    type: boolean
 
   /api/v1/modules/{moduleKey}/enable:
     post:
@@ -186,6 +238,44 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ModuleConfig"
+
+  /api/v1/modules/{moduleKey}/features:
+    get:
+      tags: [Modules]
+      summary: List module feature toggles
+      operationId: listModuleFeatures
+      parameters:
+        - $ref: "#/components/parameters/ModuleKey"
+      responses:
+        "200":
+          description: Module features
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ModuleFeature"
+    put:
+      tags: [Modules]
+      summary: Update module feature toggles
+      operationId: updateModuleFeatures
+      parameters:
+        - $ref: "#/components/parameters/ModuleKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ModuleFeaturesInput"
+      responses:
+        "200":
+          description: Updated module features
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ModuleFeature"
 
   /api/v1/modules/{moduleKey}/test:
     post:
@@ -1592,6 +1682,14 @@ components:
           type: array
           items:
             type: string
+        dependencies:
+          type: array
+          items:
+            type: string
+        features:
+          type: array
+          items:
+            $ref: "#/components/schemas/ModuleFeatureDefinition"
         providedContracts:
           type: array
           items:
@@ -1623,6 +1721,88 @@ components:
           items:
             type: string
 
+    ModuleFeatureDefinition:
+      type: object
+      required: [key, name, default]
+      properties:
+        key:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        default:
+          type: boolean
+        capabilities:
+          type: array
+          items:
+            type: string
+
+    AvailableModule:
+      type: object
+      required: [moduleKey, displayName, version, moduleType, installed, capabilities]
+      properties:
+        moduleKey:
+          type: string
+        displayName:
+          type: string
+        version:
+          type: string
+        moduleType:
+          $ref: "#/components/schemas/ModuleType"
+        description:
+          type: string
+        dependencies:
+          type: array
+          items:
+            type: string
+        capabilities:
+          type: array
+          items:
+            type: string
+        features:
+          type: array
+          items:
+            $ref: "#/components/schemas/ModuleFeatureDefinition"
+        providedContracts:
+          type: array
+          items:
+            type: string
+        installed:
+          type: boolean
+
+    ModuleFeature:
+      type: object
+      required: [featureKey, name, enabled]
+      properties:
+        featureKey:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        enabled:
+          type: boolean
+        capabilities:
+          type: array
+          items:
+            type: string
+
+    ModuleFeaturesInput:
+      type: object
+      required: [features]
+      properties:
+        features:
+          type: array
+          items:
+            type: object
+            required: [featureKey, enabled]
+            properties:
+              featureKey:
+                type: string
+              enabled:
+                type: boolean
+
     InstalledModule:
       type: object
       required: [moduleKey, displayName, version, moduleType, status, enabled]
@@ -1637,12 +1817,23 @@ components:
           $ref: "#/components/schemas/ModuleType"
         status:
           $ref: "#/components/schemas/ModuleStatus"
+        installState:
+          type: string
+          enum: [available, installed, uninstalled]
         enabled:
           type: boolean
+        dependencies:
+          type: array
+          items:
+            type: string
         capabilities:
           type: array
           items:
             type: string
+        features:
+          type: array
+          items:
+            $ref: "#/components/schemas/ModuleFeature"
         health:
           $ref: "#/components/schemas/ModuleHealth"
         installedAt:
