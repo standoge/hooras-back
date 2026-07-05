@@ -1425,6 +1425,53 @@ paths:
               schema:
                 $ref: "#/components/schemas/DocumentRequirement"
 
+  /api/v1/document-requirements/{id}:
+    patch:
+      tags: [ Documents ]
+      summary: Update document requirement
+      operationId: updateDocumentRequirement
+      description: Requires admin or coordinator role. Use active false to deactivate
+        without deleting upload history.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DocumentRequirementPatch"
+      responses:
+        "200":
+          description: Document requirement updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentRequirement"
+    delete:
+      tags: [ Documents ]
+      summary: Delete or deactivate requirement
+      operationId: deleteDocumentRequirement
+      description: Physically deletes when no uploads exist; otherwise sets active to false.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Document requirement deleted or deactivated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentRequirementDeleteResult"
+
   /api/v1/documents:
     get:
       tags: [ Documents ]
@@ -1997,25 +2044,6 @@ paths:
         - Modules
       summary: Auto-generated from Express route (PUT /api/v1/config/smtp)
       operationId: putApiV1ConfigSmtp
-      responses:
-        "200":
-          description: Success
-  /api/v1/document-requirements/{id}:
-    delete:
-      tags:
-        - Health
-      summary: Auto-generated from Express route (DELETE
-        /api/v1/document-requirements/{id})
-      operationId: deleteApiV1Document-requirementsId
-      responses:
-        "200":
-          description: Success
-    patch:
-      tags:
-        - Health
-      summary: Auto-generated from Express route (PATCH
-        /api/v1/document-requirements/{id})
-      operationId: patchApiV1Document-requirementsId
       responses:
         "200":
           description: Success
@@ -3226,8 +3254,56 @@ components:
           type: string
         label:
           type: string
+        description:
+          type: string
         required:
           type: boolean
+        scope:
+          type: string
+          enum: [ global, project, program ]
+        projectId:
+          type: string
+          format: uuid
+        appliesTo:
+          type: object
+          properties:
+            projectType:
+              type: string
+            facultyCode:
+              type: string
+            programCode:
+              type: string
+        allowedFileTypes:
+          type: array
+          items:
+            type: string
+        maxFileSizeMb:
+          type: integer
+        requiresApproval:
+          type: boolean
+        templateId:
+          type: string
+
+    DocumentRequirementPatch:
+      type: object
+      description: Partial document requirement update. All fields are optional.
+      properties:
+        key:
+          type: string
+        label:
+          type: string
+        description:
+          type: string
+        required:
+          type: boolean
+        active:
+          type: boolean
+        scope:
+          type: string
+          enum: [ global, project, program ]
+        projectId:
+          type: string
+          format: uuid
         appliesTo:
           type: object
           properties:
@@ -3257,6 +3333,19 @@ components:
             id:
               type: string
               format: uuid
+            active:
+              type: boolean
+            createdBy:
+              type: string
+
+    DocumentRequirementDeleteResult:
+      allOf:
+        - $ref: "#/components/schemas/DocumentRequirement"
+        - type: object
+          properties:
+            deleted:
+              type: boolean
+              description: True when the requirement was physically removed (no uploads).
 
     DocumentUploadInput:
       type: object
