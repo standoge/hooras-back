@@ -15,17 +15,27 @@ export type NotificationEvent =
   | 'application_submitted'
   | 'application_approved'
   | 'application_rejected'
+  | 'application_status_changed'
   | 'missing_document'
+  | 'document_requested'
+  | 'document_uploaded'
   | 'document_approved'
   | 'document_rejected'
   | 'hours_approved'
   | 'hours_rejected'
+  | 'assignment_created'
+  | 'rule_blocked'
   | 'project_deadline_approaching'
   | 'final_report_required'
   | 'certificate_generated';
 
 export interface NotificationsServiceV1 {
   send(eventType: NotificationEvent, recipient: string, payload?: Record<string, unknown>): Promise<string>;
+  listForStudent(
+    studentRef: string,
+    options?: { unreadOnly?: boolean; limit?: number; offset?: number },
+  ): Promise<unknown[]>;
+  markRead(notificationId: string, studentRef: string): Promise<unknown>;
 }
 
 export interface RulesServiceV1 {
@@ -40,8 +50,9 @@ export interface ProjectsServiceV1 {
 }
 
 export interface AssignmentsServiceV1 {
-  createFromApplication(projectId: string, studentRef: string): Promise<Record<string, unknown>>;
+  createFromApplication(projectId: string, studentRef: string, trx?: import('knex').Knex.Transaction): Promise<Record<string, unknown>>;
   listByStudent(studentRef: string): Promise<Array<{ id: string }>>;
+  completeAssignment(assignmentId: string): Promise<Record<string, unknown> | null>;
 }
 
 export interface HoursServiceV1 {
@@ -50,6 +61,9 @@ export interface HoursServiceV1 {
 
 export interface DocumentsServiceV1 {
   listRequirements(): Promise<unknown[]>;
+  listRequirementsForStudent(studentRef: string, context?: { projectId?: string }): Promise<unknown[]>;
+  getStudentUploadMatrix(studentRef: string, context?: { projectId?: string }): Promise<unknown[]>;
+  validateUpload(requirement: Record<string, unknown>, fileMeta: { mimeType: string; sizeBytes: number }): void;
   createCertificateDocument(studentRef: string, assignmentId?: string, verificationCode?: string): Promise<string>;
 }
 

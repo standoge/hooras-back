@@ -5,10 +5,14 @@ import db from '../../../database';
 import { asyncHandler } from '../../../app/middleware/asyncHandler';
 import { validate } from '../../../app/middleware/validate';
 import { authMiddleware, rbac } from '../../../app/middleware/auth';
-import { NotFoundError, BadRequestError, ExternalServiceError } from '../../../app/utils/errors';
+import { NotFoundError, BadRequestError, ExternalServiceError, ForbiddenError } from '../../../app/utils/errors';
 import { writeAuditEvent } from '../../../app/utils/audit';
 import { platformEventBus } from '../../../platform/module/EventBus';
 import { mapProject } from '../services/projects.service';
+
+function parseJsonValue<T>(val: string | T): T {
+  return typeof val === 'string' ? JSON.parse(val) : val;
+}
 import { N8nIntegrationError, triggerProjectPostedWorkflow } from '../services/n8n.service';
 
 const projectInputSchema = z.object({
@@ -23,6 +27,9 @@ const projectInputSchema = z.object({
   endsAt: z.string().optional(),
   applicationDeadline: z.string().optional(),
   publicSafe: z.boolean().optional(),
+  projectType: z.string().optional(),
+  offeredHours: z.number().optional(),
+  companyLinks: z.array(z.object({ label: z.string(), url: z.string() })).optional(),
 });
 
 const router = Router();
@@ -57,6 +64,9 @@ router.post('/', authMiddleware, rbac('coordinator', 'admin'), validate(projectI
       ends_at: body.endsAt,
       application_deadline: body.applicationDeadline,
       public_safe: body.publicSafe ?? false,
+      project_type: body.projectType,
+      offered_hours: body.offeredHours,
+      company_links: JSON.stringify(body.companyLinks ?? []),
       status: 'draft',
       source_type: 'college_created',
     })
@@ -73,6 +83,13 @@ router.post('/', authMiddleware, rbac('coordinator', 'admin'), validate(projectI
 router.get('/:projectId', authMiddleware, asyncHandler(async (req: Request, res: Response) => {
   const row = await db('projects').where({ id: req.params.projectId }).first();
   if (!row) throw new NotFoundError('Project not found');
+  if (
+    req.user?.roles.includes('student') &&
+    !req.user.roles.some((r) => ['admin', 'coordinator'].includes(r)) &&
+    !['published', 'accepting_applications', 'in_execution'].includes(row.status as string)
+  ) {
+    throw new ForbiddenError('Project is not visible to students');
+  }
   res.json(mapProject(row));
 }));
 
@@ -90,6 +107,9 @@ router.patch('/:projectId', authMiddleware, rbac('coordinator', 'admin'), valida
   if (body.endsAt) updates.ends_at = body.endsAt;
   if (body.applicationDeadline) updates.application_deadline = body.applicationDeadline;
   if (body.publicSafe !== undefined) updates.public_safe = body.publicSafe;
+  if (body.projectType !== undefined) updates.project_type = body.projectType;
+  if (body.offeredHours !== undefined) updates.offered_hours = body.offeredHours;
+  if (body.companyLinks !== undefined) updates.company_links = JSON.stringify(body.companyLinks);
   const [row] = await db('projects').where({ id: req.params.projectId }).update(updates).returning('*');
   if (!row) throw new NotFoundError('Project not found');
   res.json(mapProject(row));
@@ -117,7 +137,7 @@ router.post('/:projectId/publish', authMiddleware, rbac('coordinator', 'admin'),
     organizationName: updated.organization_name as string,
     location: updated.location as string | undefined,
     modality: updated.modality as string | undefined,
-    categories: JSON.parse(updated.categories as string),
+    categories: parseJsonValue(updated.categories as string | string[]),
     applicationDeadline: updated.application_deadline as string | undefined,
   };
 

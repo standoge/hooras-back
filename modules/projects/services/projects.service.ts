@@ -2,6 +2,10 @@ import { v4 as uuidv4 } from 'uuid';
 import db from '../../../database';
 import { ProjectsServiceV1 } from '../../../platform/contracts/services';
 
+function parseJsonValue<T>(val: string | T): T {
+  return typeof val === 'string' ? JSON.parse(val) : val;
+}
+
 function mapProject(row: Record<string, unknown>) {
   return {
     id: row.id,
@@ -10,7 +14,7 @@ function mapProject(row: Record<string, unknown>) {
     organizationName: row.organization_name,
     location: row.location,
     modality: row.modality,
-    categories: typeof row.categories === 'string' ? JSON.parse(row.categories) : row.categories,
+    categories: parseJsonValue(row.categories as string | string[]),
     capacity: row.capacity,
     startsAt: row.starts_at,
     endsAt: row.ends_at,
@@ -20,6 +24,9 @@ function mapProject(row: Record<string, unknown>) {
     sourceType: row.source_type,
     sourceUrl: row.source_url,
     extractionConfidence: row.extraction_confidence ? Number(row.extraction_confidence) : undefined,
+    projectType: row.project_type,
+    offeredHours: row.offered_hours,
+    companyLinks: parseJsonValue(row.company_links as string | unknown[] ?? []),
     createdAt: (row.created_at as Date)?.toISOString?.() ?? row.created_at,
     updatedAt: (row.updated_at as Date)?.toISOString?.() ?? row.updated_at,
   };
