@@ -14,7 +14,7 @@ export function moduleMigrationConfig(moduleKey: string, migrationsDir: string):
 }
 
 export function resolveModuleMigrationsDir(moduleKey: string): string {
-  return path.join(process.cwd(), 'src', 'modules', moduleKey, 'migrations');
+  return path.join(process.cwd(), 'modules', moduleKey, 'migrations');
 }
 
 export async function runModuleMigrations(config: ModuleMigrationConfig): Promise<void> {

@@ -8,11 +8,11 @@ const config: { [key: string]: Knex.Config } = {
     client: 'pg',
     connection: process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/social_hours',
     migrations: {
-      directory: './src/database/migrations',
+      directory: './database/migrations',
       extension: 'ts',
     },
     seeds: {
-      directory: './src/database/seeds',
+      directory: './database/seeds',
       extension: 'ts',
     },
   },

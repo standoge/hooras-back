@@ -3,7 +3,7 @@ import path from 'path';
 import { pathToFileURL } from 'url';
 import { PlatformModuleDescriptor } from './PlatformModule';
 
-const DEFAULT_MODULES_DIR = path.join(process.cwd(), 'src', 'modules');
+const DEFAULT_MODULES_DIR = path.join(process.cwd(), 'modules');
 
 export class ModuleLoader {
   /**

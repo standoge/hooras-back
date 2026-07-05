@@ -144,7 +144,7 @@ curl -X POST http://localhost:3000/api/v1/rules/evaluate \
 ## Architecture
 
 ```
-Core (src/core/) — always on, not installable
+Core (core/) — always on, not installable
   ├── health, auth, student-data, provider-connections
   ├── modules-admin (install/enable/configure modules)
   ├── config (instance settings + SMTP)
@@ -153,13 +153,13 @@ Core (src/core/) — always on, not installable
   ├── audit-log, webhooks
   └── student-cache (shared student_refs cache)
 
-Platform (src/platform/)
-  ├── ModuleLoader — discovers src/modules/*
+Platform (platform/)
+  ├── ModuleLoader — discovers modules/*
   ├── ModuleRegistry — lifecycle + migrations per module
   ├── ServiceRegistry — cross-module contracts (rules.v1, hours.v1, …)
   └── EventBus — async hooks between modules
 
-Domain modules (src/modules/) — installable, own migrations + routes
+Domain modules (modules/) — installable, own migrations + routes
   ├── dummy-auth-connector, dummy-student-data-connector
   ├── notifications, rules, projects, assignments, applications
   ├── hours, documents, certificates, imports
@@ -171,7 +171,7 @@ External integrations (ZAVU/n8n/Firecrawl) are implemented inside their respecti
 
 ## Module System
 
-The platform uses an Odoo-like module model. The **core** handles discovery, install/uninstall, enable/disable, configuration (including encrypted API keys/SMTP), feature toggles, and health checks. **Domain features** are modules under `src/modules/<moduleKey>/`.
+The platform uses an Odoo-like module model. The **core** handles discovery, install/uninstall, enable/disable, configuration (including encrypted API keys/SMTP), feature toggles, and health checks. **Domain features** are modules under `modules/<moduleKey>/`.
 
 ### Service contracts
 
@@ -200,7 +200,7 @@ On first boot, all MVP modules are auto-installed and enabled.
 ### Creating a domain module
 
 ```
-src/modules/my-module/
+modules/my-module/
   index.ts              # PlatformModuleDescriptor (export default)
   manifest.ts           # moduleKey, dependencies, requiredServices, providedServices
   contract.ts           # optional public service interface
