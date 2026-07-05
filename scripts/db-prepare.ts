@@ -1,3 +1,4 @@
+import db from '../database';
 import { prepareDatabaseEnvironment } from '../server/bootstrap';
 
 async function main() {
@@ -10,7 +11,11 @@ async function main() {
   console.log('Database prepared successfully');
 }
 
-main().catch((err) => {
-  console.error('Database preparation failed:', err);
-  process.exit(1);
-});
+main()
+  .catch((err) => {
+    console.error('Database preparation failed:', err);
+    process.exitCode = 1;
+  })
+  .finally(async () => {
+    await db.destroy();
+  });
